@@ -6,7 +6,7 @@ export async function GET() {
   try {
     // Get the active exercise from DB
     const exRows = await sql`
-      SELECT id, title, description, guidelines, timer_minutes, scenario_ids
+      SELECT id, title, description, guidelines, timer_minutes, scenario_ids, login_enabled
       FROM exercises
       WHERE is_active = TRUE
       LIMIT 1
@@ -58,6 +58,7 @@ export async function GET() {
       description: ex.description,
       guidelines:  Array.isArray(ex.guidelines) ? ex.guidelines : [],
       timerMinutes:ex.timer_minutes,
+      loginEnabled: ex.login_enabled ?? true,
       tags: [
         { icon: "👥", label: "Team Activity" },
         { icon: "🎙", label: "Articulation" },

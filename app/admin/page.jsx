@@ -575,6 +575,19 @@ function ExercisesTab({ pw }) {
     else notify(data.error || "Failed.", "error");
   };
 
+  const toggleLogin = async (id, newVal) => {
+    setActioning(id + "_login");
+    const res = await fetch(`/api/admin/exercises/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "x-admin-password": pw },
+      body: JSON.stringify({ login_enabled: newVal }),
+    });
+    const data = await res.json();
+    setActioning(null);
+    if (data.success) { notify(`Login ${newVal ? "enabled" : "disabled"}.`); load(); }
+    else notify(data.error || "Failed.", "error");
+  };
+
   const deleteEx = async (id) => {
     if (!confirm(`Delete exercise "${id}"? This cannot be undone.`)) return;
     setActioning(id + "_delete");
@@ -643,6 +656,19 @@ function ExercisesTab({ pw }) {
                   {ex.is_active && (
                     <span style={{ fontSize: 10, fontWeight: 700, background: C.crimson,
                       color: "#fff", padding: "2px 9px", borderRadius: 99 }}>ACTIVE</span>
+                  )}
+                  {ex.is_active && (
+                    <button
+                      disabled={actioning === ex.id + "_login"}
+                      onClick={() => toggleLogin(ex.id, ex.login_enabled === false ? true : false)}
+                      style={{ fontSize: 10, fontWeight: 700,
+                        background: ex.login_enabled === false ? "#92400E" : "#166534",
+                        color: "#fff", padding: "2px 10px", borderRadius: 99,
+                        border: "none", cursor: "pointer" }}>
+                      {actioning === ex.id + "_login"
+                        ? "..."
+                        : ex.login_enabled === false ? "Login OFF" : "Login ON"}
+                    </button>
                   )}
                 </div>
                 <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>{ex.description}</div>

@@ -12,11 +12,17 @@ export async function PUT(request, { params }) {
   try {
     const body = await request.json();
 
-    // Setting active: deactivate all others first
+    // Setting active: deactivate all others first, reset login to ON
     if (body.is_active === true) {
       await sql`UPDATE exercises SET is_active = FALSE`;
-      await sql`UPDATE exercises SET is_active = TRUE WHERE id = ${id}`;
+      await sql`UPDATE exercises SET is_active = TRUE, login_enabled = TRUE WHERE id = ${id}`;
       return NextResponse.json({ success: true, activeId: id });
+    }
+
+    // Toggling login on/off for the active exercise
+    if ("login_enabled" in body && Object.keys(body).length === 1) {
+      await sql`UPDATE exercises SET login_enabled = ${body.login_enabled} WHERE id = ${id}`;
+      return NextResponse.json({ success: true });
     }
 
     // General update

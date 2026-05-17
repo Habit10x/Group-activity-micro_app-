@@ -101,7 +101,7 @@ const TopNav = ({ teamName, members, back, onLogout }) => (
 );
 
 // ─── StartScreen ──────────────────────────────────────────────────────────────
-const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, removeMember, setMember, startError, setStartError, handleStart, startChecking, onViewResults, total, onLogout }) => {
+const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, removeMember, setMember, startError, setStartError, handleStart, startChecking, onViewResults, loginEnabled = true, total, onLogout }) => {
   const [vrOpen,    setVrOpen]    = useState(false);
   const [vrName,    setVrName]    = useState("");
   const [vrError,   setVrError]   = useState("");
@@ -149,118 +149,169 @@ const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, remo
         ))}
       </div>
 
-      <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"0 0 28px"}} />
+      {loginEnabled && (
+        <>
+          <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"0 0 28px"}} />
 
-      <h2 style={{fontSize:22, fontWeight:700, color:C.text,
-        fontFamily:"Georgia,serif", margin:"0 0 20px"}}>
-        Guidelines
-      </h2>
-      {(exercise?.guidelines || []).map((g, i) => (
-        <div key={i} style={{display:"flex", gap:14, marginBottom:16, alignItems:"flex-start"}}>
-          <div style={{width:26, height:26, borderRadius:"50%", flexShrink:0,
-            background:C.crimsonLight, display:"flex", alignItems:"center",
-            justifyContent:"center", fontSize:11, fontWeight:700,
-            color:C.crimson, marginTop:1}}>
-            {i+1}
-          </div>
-          <span style={{fontSize:15, color:C.text, lineHeight:1.6}}>{g}</span>
-        </div>
-      ))}
+          <h2 style={{fontSize:22, fontWeight:700, color:C.text,
+            fontFamily:"Georgia,serif", margin:"0 0 20px"}}>
+            Guidelines
+          </h2>
+          {(exercise?.guidelines || []).map((g, i) => (
+            <div key={i} style={{display:"flex", gap:14, marginBottom:16, alignItems:"flex-start"}}>
+              <div style={{width:26, height:26, borderRadius:"50%", flexShrink:0,
+                background:C.crimsonLight, display:"flex", alignItems:"center",
+                justifyContent:"center", fontSize:11, fontWeight:700,
+                color:C.crimson, marginTop:1}}>
+                {i+1}
+              </div>
+              <span style={{fontSize:15, color:C.text, lineHeight:1.6}}>{g}</span>
+            </div>
+          ))}
+        </>
+      )}
 
-      <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"28px 0"}} />
+      {loginEnabled ? (
+        <>
+          <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"28px 0"}} />
 
-      <h2 style={{fontSize:22, fontWeight:700, color:C.text,
-        fontFamily:"Georgia,serif", margin:"0 0 20px"}}>
-        Your Team
-      </h2>
+          <h2 style={{fontSize:22, fontWeight:700, color:C.text,
+            fontFamily:"Georgia,serif", margin:"0 0 20px"}}>
+            Your Team
+          </h2>
 
-      <label style={{display:"block", marginBottom:20}}>
-        <div style={{fontSize:11, fontWeight:700, color:C.muted,
-          textTransform:"uppercase", letterSpacing:1, marginBottom:7}}>
-          Team Name
-        </div>
-        <input
-          type="text"
-          value={teamName}
-          onChange={e => { setTeamName(e.target.value); setStartError(""); }}
-          onKeyDown={e => e.key === "Enter" && handleStart()}
-          placeholder="e.g. Team Clarity"
-          style={{width:"100%", padding:"11px 14px",
-            border:"1.5px solid "+C.border, borderRadius:8,
-            fontSize:14, color:C.text, background:C.card,
-            outline:"none", boxSizing:"border-box", fontFamily:"inherit"}} />
-      </label>
-
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11, fontWeight:700, color:C.muted,
-          textTransform:"uppercase", letterSpacing:1, marginBottom:10}}>
-          Team Members
-        </div>
-        {members.map((m, i) => (
-          <div key={i} style={{display:"flex", gap:8, marginBottom:8}}>
+          <label style={{display:"block", marginBottom:20}}>
+            <div style={{fontSize:11, fontWeight:700, color:C.muted,
+              textTransform:"uppercase", letterSpacing:1, marginBottom:7}}>
+              Team Name
+            </div>
             <input
               type="text"
-              value={m}
-              onChange={e => setMember(i, e.target.value)}
-              placeholder={`Member ${i+1} name`}
-              style={{flex:1, padding:"10px 13px",
+              value={teamName}
+              onChange={e => { setTeamName(e.target.value); setStartError(""); }}
+              onKeyDown={e => e.key === "Enter" && handleStart()}
+              placeholder="e.g. Team Clarity"
+              style={{width:"100%", padding:"11px 14px",
                 border:"1.5px solid "+C.border, borderRadius:8,
                 fontSize:14, color:C.text, background:C.card,
-                outline:"none", fontFamily:"inherit"}} />
-            {members.length > 1 && (
-              <button onClick={() => removeMember(i)}
-                style={{width:38, height:38, borderRadius:8,
-                  border:"1px solid "+C.border, background:C.card,
-                  color:C.muted, fontSize:20, cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  lineHeight:1}}>
-                ×
+                outline:"none", boxSizing:"border-box", fontFamily:"inherit"}} />
+          </label>
+
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:11, fontWeight:700, color:C.muted,
+              textTransform:"uppercase", letterSpacing:1, marginBottom:10}}>
+              Team Members
+            </div>
+            {members.map((m, i) => (
+              <div key={i} style={{display:"flex", gap:8, marginBottom:8}}>
+                <input
+                  type="text"
+                  value={m}
+                  onChange={e => setMember(i, e.target.value)}
+                  placeholder={`Member ${i+1} name`}
+                  style={{flex:1, padding:"10px 13px",
+                    border:"1.5px solid "+C.border, borderRadius:8,
+                    fontSize:14, color:C.text, background:C.card,
+                    outline:"none", fontFamily:"inherit"}} />
+                {members.length > 1 && (
+                  <button onClick={() => removeMember(i)}
+                    style={{width:38, height:38, borderRadius:8,
+                      border:"1px solid "+C.border, background:C.card,
+                      color:C.muted, fontSize:20, cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      lineHeight:1}}>
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            {members.length < 5 && (
+              <button onClick={addMember}
+                style={{background:"none", border:"1.5px dashed "+C.border,
+                  color:C.muted, fontSize:13, fontWeight:600,
+                  padding:"9px 16px", borderRadius:8, cursor:"pointer",
+                  width:"100%", marginTop:2, fontFamily:"inherit"}}>
+                + Add member
               </button>
             )}
           </div>
-        ))}
-        {members.length < 5 && (
-          <button onClick={addMember}
-            style={{background:"none", border:"1.5px dashed "+C.border,
-              color:C.muted, fontSize:13, fontWeight:600,
-              padding:"9px 16px", borderRadius:8, cursor:"pointer",
-              width:"100%", marginTop:2, fontFamily:"inherit"}}>
-            + Add member
-          </button>
-        )}
-      </div>
 
-      {startError && (
-        <div style={{background:C.crimsonPale, border:"1px solid #FECACA",
-          borderRadius:8, padding:"9px 13px", marginBottom:20,
-          fontSize:13, color:C.crimson}}>{startError}</div>
-      )}
+          {startError && (
+            <div style={{background:C.crimsonPale, border:"1px solid #FECACA",
+              borderRadius:8, padding:"9px 13px", marginBottom:20,
+              fontSize:13, color:C.crimson}}>{startError}</div>
+          )}
 
-      <div style={{textAlign:"center"}}>
-        <button onClick={handleStart} disabled={startChecking}
-          style={{background: startChecking ? C.muted : C.crimson, color:"#fff", border:"none",
-            borderRadius:10, padding:"14px 40px", fontSize:15, fontWeight:700,
-            cursor: startChecking ? "not-allowed" : "pointer",
-            fontFamily:"inherit", letterSpacing:0.3}}>
-          {startChecking ? "Checking..." : "Start Exercise →"}
-        </button>
-      </div>
-
-      <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"28px 0 20px"}} />
-
-      {!vrOpen ? (
-        <div style={{textAlign:"center"}}>
-          <button onClick={() => setVrOpen(true)}
-            style={{background:"none", border:"none", color:C.muted, fontSize:13,
-              cursor:"pointer", textDecoration:"underline", fontFamily:"inherit", padding:0}}>
-            Already attempted the exercise? View your results →
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div style={{fontSize:13, fontWeight:600, color:C.text, marginBottom:10}}>
-            View Your Results
+          <div style={{textAlign:"center"}}>
+            <button onClick={handleStart} disabled={startChecking}
+              style={{background: startChecking ? C.muted : C.crimson, color:"#fff", border:"none",
+                borderRadius:10, padding:"14px 40px", fontSize:15, fontWeight:700,
+                cursor: startChecking ? "not-allowed" : "pointer",
+                fontFamily:"inherit", letterSpacing:0.3}}>
+              {startChecking ? "Checking..." : "Start Exercise →"}
+            </button>
           </div>
+
+          <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"28px 0 20px"}} />
+
+          {!vrOpen ? (
+            <div style={{textAlign:"center"}}>
+              <button onClick={() => setVrOpen(true)}
+                style={{background:"none", border:"none", color:C.muted, fontSize:13,
+                  cursor:"pointer", textDecoration:"underline", fontFamily:"inherit", padding:0}}>
+                Already attempted the exercise? View your results →
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{fontSize:13, fontWeight:600, color:C.text, marginBottom:10}}>
+                View Your Results
+              </div>
+              <div style={{display:"flex", gap:8}}>
+                <input
+                  type="text"
+                  value={vrName}
+                  onChange={e => { setVrName(e.target.value); setVrError(""); }}
+                  onKeyDown={e => e.key === "Enter" && !vrLoading && handleVR()}
+                  placeholder="Enter your team name"
+                  autoFocus
+                  style={{flex:1, padding:"11px 14px",
+                    border:"1.5px solid "+(vrError ? "#FECACA" : C.border),
+                    borderRadius:8, fontSize:14, color:C.text,
+                    background:C.card, outline:"none", fontFamily:"inherit"}} />
+                <button onClick={handleVR} disabled={vrLoading}
+                  style={{padding:"11px 20px", background: vrLoading ? C.muted : C.crimson,
+                    color:"#fff", border:"none", borderRadius:8, fontSize:13,
+                    fontWeight:700, cursor: vrLoading ? "not-allowed" : "pointer",
+                    fontFamily:"inherit", whiteSpace:"nowrap"}}>
+                  {vrLoading ? "..." : "View →"}
+                </button>
+              </div>
+              {vrError && (
+                <div style={{background:C.crimsonPale, border:"1px solid #FECACA",
+                  borderRadius:8, padding:"9px 13px", marginTop:10,
+                  fontSize:13, color:C.crimson}}>{vrError}</div>
+              )}
+              <button onClick={() => { setVrOpen(false); setVrName(""); setVrError(""); }}
+                style={{background:"none", border:"none", color:C.muted, fontSize:12,
+                  cursor:"pointer", marginTop:10, padding:0, fontFamily:"inherit"}}>
+                ← Cancel
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <hr style={{border:"none", borderTop:"1px solid "+C.border, margin:"28px 0"}} />
+
+          <h2 style={{fontSize:22, fontWeight:700, color:C.text,
+            fontFamily:"Georgia,serif", margin:"0 0 8px"}}>
+            See Results
+          </h2>
+          <p style={{fontSize:14, color:C.muted, margin:"0 0 20px", lineHeight:1.6}}>
+            The exercise is complete. Enter your team name to view your results.
+          </p>
+
           <div style={{display:"flex", gap:8}}>
             <input
               type="text"
@@ -278,7 +329,7 @@ const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, remo
                 color:"#fff", border:"none", borderRadius:8, fontSize:13,
                 fontWeight:700, cursor: vrLoading ? "not-allowed" : "pointer",
                 fontFamily:"inherit", whiteSpace:"nowrap"}}>
-              {vrLoading ? "..." : "View →"}
+              {vrLoading ? "..." : "View Results →"}
             </button>
           </div>
           {vrError && (
@@ -286,12 +337,7 @@ const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, remo
               borderRadius:8, padding:"9px 13px", marginTop:10,
               fontSize:13, color:C.crimson}}>{vrError}</div>
           )}
-          <button onClick={() => { setVrOpen(false); setVrName(""); setVrError(""); }}
-            style={{background:"none", border:"none", color:C.muted, fontSize:12,
-              cursor:"pointer", marginTop:10, padding:0, fontFamily:"inherit"}}>
-            ← Cancel
-          </button>
-        </div>
+        </>
       )}
     </div>
   </div>
@@ -1007,6 +1053,7 @@ export default function App() {
   }, []);
 
   const { exercise, scenarios, community } = exercisePayload;
+  const loginEnabled = exercise?.loginEnabled ?? true;
 
   const [savedAttempt,  setSavedAttempt]  = useState(null);
   const [startChecking, setStartChecking] = useState(false);
@@ -1137,6 +1184,7 @@ export default function App() {
         startError={startError} setStartError={setStartError}
         handleStart={handleStart} startChecking={startChecking}
         onViewResults={handleViewResults}
+        loginEnabled={loginEnabled}
         total={total} {...sharedProps} />}
 
       {screen==="answering" && !savedAttempt && <AnsweringScreen

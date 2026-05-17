@@ -10,7 +10,7 @@ export async function GET(request) {
   if (!checkAuth(request)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
     const exercises = await sql`
-      SELECT id, title, description, guidelines, timer_minutes, scenario_ids, is_active
+      SELECT id, title, description, guidelines, timer_minutes, scenario_ids, is_active, login_enabled
       FROM exercises
       ORDER BY is_active DESC, id ASC
     `;

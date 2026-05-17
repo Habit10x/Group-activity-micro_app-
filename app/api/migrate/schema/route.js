@@ -209,5 +209,21 @@ export async function GET() {
     }
   }
 
+  // ── 7. Add login_enabled column to exercises ─────────────────────────────────
+  try {
+    const leRows = await sql`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'exercises' AND column_name = 'login_enabled'
+    `;
+    if (leRows.length === 0) {
+      await sql`ALTER TABLE exercises ADD COLUMN login_enabled BOOLEAN NOT NULL DEFAULT TRUE`;
+      results.push("✓ added column exercises.login_enabled");
+    } else {
+      results.push("· exercises.login_enabled already exists (skipped)");
+    }
+  } catch (err) {
+    results.push("· exercises.login_enabled: " + err.message);
+  }
+
   return NextResponse.json({ success: true, results });
 }
