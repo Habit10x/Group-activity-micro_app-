@@ -1045,6 +1045,21 @@ export function App({ forceExerciseId } = {}) {
   const [notFound, setNotFound] = useState(false);
   const [loadingExercise, setLoadingExercise] = useState(true);
 
+  // All hooks must be declared before any conditional returns
+  const [savedAttempt,  setSavedAttempt]  = useState(null);
+  const [startChecking, setStartChecking] = useState(false);
+  const [teamName,    setTeamName]    = useState("");
+  const [members,     setMembers]     = useState(["", "", ""]);
+  const [startError,  setStartError]  = useState("");
+  const [screen,      setScreen]      = useState("start");
+  const [q,           setQ]           = useState(1);
+  const [texts,       setTexts]       = useState({});
+  const [fbOpen,      setFbOpen]      = useState(null);
+  const [insightOpen, setInsightOpen] = useState(null);
+  const [commSc,      setCommSc]      = useState(1);
+  const [sortBy,      setSortBy]      = useState("best");
+  const [submitting,  setSubmitting]  = useState(false);
+
   useEffect(() => {
     const url = forceExerciseId
       ? `/api/exercise/${encodeURIComponent(forceExerciseId)}`
@@ -1061,6 +1076,13 @@ export function App({ forceExerciseId } = {}) {
       .catch(() => {})
       .finally(() => setLoadingExercise(false));
   }, [forceExerciseId]);
+
+  const { exercise, scenarios, community } = exercisePayload;
+
+  // Reset commSc when exercise changes
+  useEffect(() => {
+    setCommSc(scenarios[0]?.id || 1);
+  }, [exercise?.id]);
 
   if (loadingExercise) return null;
 
@@ -1081,29 +1103,7 @@ export function App({ forceExerciseId } = {}) {
     );
   }
 
-  const { exercise, scenarios, community } = exercisePayload;
   const loginEnabled = exercise?.loginEnabled ?? true;
-
-  const [savedAttempt,  setSavedAttempt]  = useState(null);
-  const [startChecking, setStartChecking] = useState(false);
-
-  // Team / navigation
-  const [teamName,    setTeamName]    = useState("");
-  const [members,     setMembers]     = useState(["", "", ""]);
-  const [startError,  setStartError]  = useState("");
-  const [screen,      setScreen]      = useState("start");
-  const [q,           setQ]           = useState(1);
-  const [texts,       setTexts]       = useState({});
-  const [fbOpen,      setFbOpen]      = useState(null);
-  const [insightOpen, setInsightOpen] = useState(null);
-  const [commSc,      setCommSc]      = useState(scenarios[0]?.id || 1);
-  const [sortBy,      setSortBy]      = useState("best");
-  const [submitting,  setSubmitting]  = useState(false);
-
-  // Reset commSc when exercise changes
-  useEffect(() => {
-    setCommSc(scenarios[0]?.id || 1);
-  }, [exercise?.id]);
 
   const total        = scenarios.length;
   const scenario     = scenarios[q - 1];
