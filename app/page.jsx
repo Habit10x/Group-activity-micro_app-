@@ -1038,19 +1038,48 @@ const InsightModal = ({ insightOpen, community, teamName, setScreen }) => {
 };
 
 // ─── App ──────────────────────────────────────────────────────────────────────
-export default function App() {
+export function App({ forceExerciseId } = {}) {
   // Active exercise data (fetched from API, falls back to hardcoded)
   const FALLBACK = getExerciseData("articulation-01");
   const [exercisePayload, setExercisePayload] = useState(FALLBACK);
+  const [notFound, setNotFound] = useState(false);
+  const [loadingExercise, setLoadingExercise] = useState(true);
 
   useEffect(() => {
-    fetch("/api/exercise/active")
-      .then(r => r.json())
+    const url = forceExerciseId
+      ? `/api/exercise/${encodeURIComponent(forceExerciseId)}`
+      : "/api/exercise/active";
+    fetch(url)
+      .then(r => {
+        if (!r.ok) { setNotFound(true); return null; }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         if (data?.exercise && data?.scenarios) setExercisePayload(data);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {})
+      .finally(() => setLoadingExercise(false));
+  }, [forceExerciseId]);
+
+  if (loadingExercise) return null;
+
+  if (notFound) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex",
+        alignItems: "center", justifyContent: "center", fontFamily: "Georgia,serif" }}>
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: "#6B1A1A", margin: "0 0 10px" }}>
+            Exercise Not Available
+          </h1>
+          <p style={{ fontSize: 15, color: "#888", margin: 0 }}>
+            This exercise is not currently active. Please check with your administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const { exercise, scenarios, community } = exercisePayload;
   const loginEnabled = exercise?.loginEnabled ?? true;
@@ -1235,3 +1264,5 @@ export default function App() {
     </div>
   );
 }
+
+export default App;

@@ -685,6 +685,14 @@ function ExercisesTab({ pw }) {
                     {actioning === ex.id + "_active" ? "Setting..." : "Set Active →"}
                   </Btn>
                 )}
+                {ex.is_active && (
+                  <Btn variant="ghost" onClick={() => {
+                    const link = `${window.location.origin}/exercise/${ex.id}`;
+                    navigator.clipboard.writeText(link).then(() => notify("Link copied!"));
+                  }}>
+                    Copy Link
+                  </Btn>
+                )}
                 <Btn variant="ghost" onClick={() => setEditing(ex)}>Edit</Btn>
                 {!ex.is_active && (
                   <Btn variant="danger" disabled={actioning === ex.id + "_delete"}
