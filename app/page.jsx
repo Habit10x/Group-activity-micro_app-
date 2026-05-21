@@ -28,6 +28,8 @@ const C = {
 };
 
 
+const MODERATOR_EMAIL = "moderator-habit10x@gmail.com";
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const scoreBg  = s => s>=8 ? C.greenPale  : s>=6 ? C.amberPale  : C.crimsonPale;
 const scoreClr = s => s>=8 ? C.green      : s>=6 ? C.amber      : C.red;
@@ -101,20 +103,35 @@ const TopNav = ({ teamName, members, back, onLogout }) => (
 );
 
 // ─── StartScreen ──────────────────────────────────────────────────────────────
-const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, removeMember, setMember, startError, setStartError, handleStart, startChecking, onViewResults, loginEnabled = true, total, onLogout }) => {
+const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, removeMember, setMember, startError, setStartError, handleStart, startChecking, onViewResults, onModeratorAccess, loginEnabled = true, total, onLogout }) => {
   const [vrOpen,    setVrOpen]    = useState(false);
   const [vrName,    setVrName]    = useState("");
   const [vrError,   setVrError]   = useState("");
   const [vrLoading, setVrLoading] = useState(false);
+  const [modOpen,   setModOpen]   = useState(false);
+  const [modEmail,  setModEmail]  = useState("");
+  const [modError,  setModError]  = useState("");
 
   const handleVR = async () => {
     if (!vrName.trim()) { setVrError("Please enter your team name."); return; }
+    if (vrName.trim().toLowerCase() === MODERATOR_EMAIL) {
+      onModeratorAccess();
+      return;
+    }
     setVrLoading(true);
     setVrError("");
     const result = await onViewResults(vrName.trim());
     setVrLoading(false);
     if (result && result.error) setVrError(result.error);
     if (result && !result.found && !result.error) setVrError("No results found for this team name.");
+  };
+
+  const handleMod = () => {
+    if (modEmail.trim().toLowerCase() === MODERATOR_EMAIL) {
+      onModeratorAccess();
+    } else {
+      setModError("Unrecognized moderator email.");
+    }
   };
 
   return (
@@ -299,6 +316,52 @@ const StartScreen = ({ exercise, teamName, setTeamName, members, addMember, remo
               </button>
             </div>
           )}
+
+          <div style={{marginTop:24, textAlign:"center"}}>
+            {!modOpen ? (
+              <button onClick={() => setModOpen(true)}
+                style={{background:"none", border:"none", color:C.muted, fontSize:11,
+                  cursor:"pointer", fontFamily:"inherit", padding:0, opacity:0.55}}>
+                Moderator access
+              </button>
+            ) : (
+              <div style={{borderTop:"1px solid "+C.border, paddingTop:20, textAlign:"left"}}>
+                <div style={{fontSize:13, fontWeight:600, color:C.text, marginBottom:10}}>
+                  Moderator Access
+                </div>
+                <div style={{display:"flex", gap:8}}>
+                  <input
+                    type="email"
+                    value={modEmail}
+                    onChange={e => { setModEmail(e.target.value); setModError(""); }}
+                    onKeyDown={e => e.key === "Enter" && handleMod()}
+                    placeholder="Enter moderator email"
+                    autoFocus
+                    style={{flex:1, padding:"11px 14px",
+                      border:"1.5px solid "+(modError ? "#FECACA" : C.border),
+                      borderRadius:8, fontSize:14, color:C.text,
+                      background:C.card, outline:"none", fontFamily:"inherit"}} />
+                  <button onClick={handleMod}
+                    style={{padding:"11px 20px", background:C.crimson,
+                      color:"#fff", border:"none", borderRadius:8, fontSize:13,
+                      fontWeight:700, cursor:"pointer",
+                      fontFamily:"inherit", whiteSpace:"nowrap"}}>
+                    Enter →
+                  </button>
+                </div>
+                {modError && (
+                  <div style={{background:C.crimsonPale, border:"1px solid #FECACA",
+                    borderRadius:8, padding:"9px 13px", marginTop:10,
+                    fontSize:13, color:C.crimson}}>{modError}</div>
+                )}
+                <button onClick={() => { setModOpen(false); setModEmail(""); setModError(""); }}
+                  style={{background:"none", border:"none", color:C.muted, fontSize:12,
+                    cursor:"pointer", marginTop:10, padding:0, fontFamily:"inherit"}}>
+                  ← Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </>
       ) : (
         <>
@@ -1037,6 +1100,230 @@ const InsightModal = ({ insightOpen, community, teamName, setScreen }) => {
   );
 };
 
+// ─── ModeratorLeaderboard ─────────────────────────────────────────────────────
+const ModeratorLeaderboard = () => {
+  const [teams,   setTeams]   = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/leaderboard")
+      .then(r => r.json())
+      .then(data => {
+        setTeams((data.teams || []).map(t => ({
+          name:    t.team_name,
+          members: Array.isArray(t.members) ? t.members : [],
+        })));
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const medalBorderLeft = i =>
+    i===0 ? "4px solid "+C.gold
+    : i===1 ? "4px solid #A8B2BE"
+    : i===2 ? "4px solid #C49A72"
+    : "1px solid "+C.border;
+  const medalIcon = i => i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : "";
+
+  if (loading) return (
+    <div style={{textAlign:"center", padding:"48px 0", color:C.muted, fontSize:14}}>
+      Loading leaderboard...
+    </div>
+  );
+
+  if (!teams || teams.length === 0) return (
+    <div style={{textAlign:"center", padding:"48px 0", color:C.muted, fontSize:14}}>
+      No submissions yet.
+    </div>
+  );
+
+  return (
+    <div>
+      <p style={{fontSize:13, color:C.muted, margin:"0 0 16px"}}>
+        {teams.length} team{teams.length !== 1 ? "s" : ""} · Ranked by score
+      </p>
+      {teams.map((team, i) => (
+        <div key={team.name+i} style={{background:C.card, borderRadius:12, marginBottom:10,
+          overflow:"hidden", borderLeft: medalBorderLeft(i),
+          border: "1px solid "+C.border,
+          boxShadow: i===0 ? "0 2px 12px rgba(107,26,26,0.10)" : "0 1px 4px rgba(0,0,0,0.04)"}}>
+          <div style={{padding:"14px 16px", display:"flex", alignItems:"center", gap:12}}>
+            <div style={{width:32, height:32, borderRadius:"50%", flexShrink:0,
+              background: i===0 ? C.gold : i===1 ? "#DDE1E7" : i===2 ? "#EAD9C8" : C.borderLight,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize: i<3 ? 18 : 12, fontWeight:700,
+              color: i===0 ? "#7A5500" : i===1 ? "#6B7280" : i===2 ? "#8B6F5E" : C.muted}}>
+              {i<3 ? medalIcon(i) : i+1}
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:14, fontWeight:700, color:C.text}}>{team.name}</div>
+              <div style={{fontSize:11, color:C.muted, marginTop:2,
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                {team.members.filter(m => m).join(" · ") || "—"}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── ModeratorCommunity ───────────────────────────────────────────────────────
+const ModeratorCommunity = ({ scenarios, community }) => {
+  const [commSc, setCommSc] = useState(scenarios[0]?.id || 1);
+  const [sortBy, setSortBy] = useState("latest");
+
+  const commScenario = scenarios.find(s => s.id === commSc);
+  const answers = community
+    .filter(a => a.sid === commSc)
+    .sort((a, b) => sortBy === "latest" ? b.id - a.id : a.id - b.id);
+
+  return (
+    <div>
+      <div style={{display:"flex", gap:7, overflowX:"auto", marginBottom:24, paddingBottom:4}}>
+        {scenarios.map(s => (
+          <button key={s.id} onClick={() => setCommSc(s.id)}
+            style={{padding:"6px 16px", borderRadius:99, border:"1.5px solid",
+              borderColor: commSc===s.id ? C.crimson : C.border,
+              background: commSc===s.id ? C.crimsonPale : C.card,
+              color: commSc===s.id ? C.crimson : C.muted,
+              fontSize:12, fontWeight:600, cursor:"pointer",
+              whiteSpace:"nowrap", flexShrink:0}}>
+            {s.id}. {s.short}
+          </button>
+        ))}
+      </div>
+
+      {commScenario && (
+        <div style={{background:C.card, borderRadius:12,
+          border:"1px solid "+C.border, overflow:"hidden", marginBottom:16}}>
+          <div style={{padding:"14px 18px", borderBottom:"1px solid "+C.borderLight}}>
+            <div style={{fontSize:10, fontWeight:700, color:C.muted,
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:7}}>
+              Scenario {commScenario.id}
+            </div>
+            <p style={{fontSize:14, color:C.text, lineHeight:1.7,
+              margin:0, fontStyle:"italic", fontWeight:500}}>
+              "{commScenario.text}"
+            </p>
+          </div>
+          <div style={{padding:"13px 18px", background:"#FDFCFB"}}>
+            <div style={{fontSize:10, fontWeight:700, color:C.muted,
+              letterSpacing:1.5, textTransform:"uppercase", marginBottom:8}}>
+              Context
+            </div>
+            {commScenario.ctx.map((c, i) => (
+              <div key={i} style={{display:"flex", gap:9, marginBottom:5}}>
+                <span style={{color:C.crimson, fontWeight:700,
+                  fontSize:12, flexShrink:0, marginTop:2}}>→</span>
+                <span style={{fontSize:12, color:C.text, lineHeight:1.5}}>{c}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{display:"flex", justifyContent:"space-between",
+        alignItems:"center", marginBottom:14}}>
+        <span style={{fontSize:12, color:C.muted}}>{answers.length} responses</span>
+        <div style={{display:"flex", gap:6}}>
+          {["latest","oldest"].map(opt => (
+            <button key={opt} onClick={() => setSortBy(opt)}
+              style={{padding:"5px 12px", borderRadius:20, border:"1px solid "+C.border,
+                background: sortBy===opt ? C.crimson : C.card,
+                color: sortBy===opt ? "#fff" : C.muted,
+                fontSize:11, fontWeight:600, cursor:"pointer"}}>
+              {opt==="latest" ? "Latest" : "Oldest"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {answers.length === 0 ? (
+        <div style={{textAlign:"center", padding:"32px 0", color:C.muted, fontSize:14}}>
+          No responses for this scenario yet.
+        </div>
+      ) : answers.map(ans => (
+        <div key={ans.id} style={{background:C.card, borderRadius:12,
+          padding:"15px 18px", marginBottom:10, border:"1px solid "+C.border}}>
+          <div style={{display:"flex", alignItems:"flex-start", gap:10, marginBottom:10}}>
+            <div style={{width:32, height:32, borderRadius:"50%",
+              background:"#EDE8E3", display:"flex", alignItems:"center",
+              justifyContent:"center", fontSize:10, fontWeight:700,
+              color:C.muted, flexShrink:0}}>
+              {ans.init}
+            </div>
+            <span style={{fontSize:13, fontWeight:600, color:C.text, paddingTop:6}}>
+              {ans.name}
+            </span>
+          </div>
+          <p style={{fontSize:13, color:C.text, lineHeight:1.65, margin:"0 0 0 42px"}}>
+            {ans.answer}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── ModeratorView ────────────────────────────────────────────────────────────
+const ModeratorView = ({ scenarios, community, onLogout }) => {
+  const [tab, setTab] = useState("leaderboard");
+
+  return (
+    <div style={{minHeight:"100vh", background:C.bg}}>
+      <header style={{background:C.card, borderBottom:"1px solid "+C.border,
+        padding:"0 24px", height:52, display:"flex",
+        alignItems:"center", justifyContent:"space-between",
+        position:"sticky", top:0, zIndex:50}}>
+        <div style={{display:"flex", alignItems:"center", gap:12}}>
+          <span style={{fontWeight:800, fontSize:17, color:C.crimson,
+            letterSpacing:0.5, fontFamily:"Georgia,serif"}}>SHARP</span>
+          <span style={{color:C.borderLight, fontSize:16}}>|</span>
+          <span style={{fontSize:13, color:C.muted, fontWeight:500}}>Moderator View</span>
+        </div>
+        <button onClick={onLogout}
+          style={{background:"none", border:"1px solid "+C.border,
+            color:C.muted, fontSize:12, fontWeight:600,
+            padding:"6px 14px", borderRadius:8, cursor:"pointer",
+            fontFamily:"inherit"}}>
+          Log out
+        </button>
+      </header>
+
+      <div style={{maxWidth:680, margin:"0 auto", padding:"28px 20px 48px"}}>
+        <div style={{marginBottom:24}}>
+          <h1 style={{fontSize:24, fontWeight:700, color:C.text,
+            fontFamily:"Georgia,serif", margin:"0 0 4px"}}>
+            Moderator Dashboard
+          </h1>
+          <p style={{fontSize:13, color:C.muted, margin:0}}>
+            Read-only view · Scores hidden
+          </p>
+        </div>
+
+        <div style={{display:"flex", gap:4, marginBottom:24,
+          borderBottom:"1px solid "+C.border}}>
+          {[["leaderboard","🏆 Leaderboard"],["community","💬 Community Responses"]].map(([id,label]) => (
+            <button key={id} onClick={() => setTab(id)}
+              style={{padding:"9px 18px", border:"none", background:"none",
+                fontSize:13, fontWeight:600, cursor:"pointer",
+                color: tab===id ? C.crimson : C.muted, fontFamily:"inherit",
+                borderBottom: tab===id ? "2px solid "+C.crimson : "2px solid transparent",
+                marginBottom:-1}}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab==="leaderboard" && <ModeratorLeaderboard />}
+        {tab==="community"   && <ModeratorCommunity scenarios={scenarios} community={community} />}
+      </div>
+    </div>
+  );
+};
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export function App({ forceExerciseId } = {}) {
   // Active exercise data (fetched from API, falls back to hardcoded)
@@ -1046,6 +1333,7 @@ export function App({ forceExerciseId } = {}) {
   const [loadingExercise, setLoadingExercise] = useState(true);
 
   // All hooks must be declared before any conditional returns
+  const [isModerator,   setIsModerator]   = useState(false);
   const [savedAttempt,  setSavedAttempt]  = useState(null);
   const [startChecking, setStartChecking] = useState(false);
   const [teamName,    setTeamName]    = useState("");
@@ -1140,8 +1428,18 @@ export function App({ forceExerciseId } = {}) {
     setTexts({});
   };
 
+  const handleModeratorLogout = () => {
+    setIsModerator(false);
+    setTeamName("");
+  };
+
   const handleStart = async () => {
     if (!teamName.trim()) { setStartError("Please enter a team name."); return; }
+    if (teamName.trim().toLowerCase() === MODERATOR_EMAIL) {
+      setIsModerator(true);
+      return;
+    }
+    if (!members.some(m => m.trim())) { setStartError("Please add at least one team member."); return; }
     setStartChecking(true);
     setStartError("");
     try {
@@ -1205,61 +1503,72 @@ export function App({ forceExerciseId } = {}) {
   return (
     <div style={{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
 
-      {screen==="start" && !savedAttempt && <StartScreen
-        exercise={exercise}
-        teamName={teamName} setTeamName={setTeamName}
-        members={members} addMember={addMember}
-        removeMember={removeMember} setMember={setMember}
-        startError={startError} setStartError={setStartError}
-        handleStart={handleStart} startChecking={startChecking}
-        onViewResults={handleViewResults}
-        loginEnabled={loginEnabled}
-        total={total} {...sharedProps} />}
+      {isModerator ? (
+        <ModeratorView
+          scenarios={scenarios}
+          community={community}
+          onLogout={handleModeratorLogout}
+        />
+      ) : (
+        <>
+          {screen==="start" && !savedAttempt && <StartScreen
+            exercise={exercise}
+            teamName={teamName} setTeamName={setTeamName}
+            members={members} addMember={addMember}
+            removeMember={removeMember} setMember={setMember}
+            startError={startError} setStartError={setStartError}
+            handleStart={handleStart} startChecking={startChecking}
+            onViewResults={handleViewResults}
+            onModeratorAccess={() => setIsModerator(true)}
+            loginEnabled={loginEnabled}
+            total={total} {...sharedProps} />}
 
-      {screen==="answering" && !savedAttempt && <AnsweringScreen
-        teamName={teamName} members={members}
-        q={q} setQ={setQ} texts={texts} setTexts={setTexts}
-        total={total} scenario={scenario} setScreen={setScreen}
-        onSubmitAll={handleSubmitAll} {...sharedProps} />}
+          {screen==="answering" && !savedAttempt && <AnsweringScreen
+            teamName={teamName} members={members}
+            q={q} setQ={setQ} texts={texts} setTexts={setTexts}
+            total={total} scenario={scenario} setScreen={setScreen}
+            onSubmitAll={handleSubmitAll} {...sharedProps} />}
 
-      {(screen==="results" || screen==="feedback") && <ResultsScreen
-        teamName={teamName} members={members} scenarios={scenarios}
-        overall={overall} myRank={1} allTeams={fallbackTeams}
-        total={total} setScreen={setScreen} setFbOpen={setFbOpen}
-        readOnly={!!savedAttempt} {...sharedProps} />}
+          {(screen==="results" || screen==="feedback") && <ResultsScreen
+            teamName={teamName} members={members} scenarios={scenarios}
+            overall={overall} myRank={1} allTeams={fallbackTeams}
+            total={total} setScreen={setScreen} setFbOpen={setFbOpen}
+            readOnly={!!savedAttempt} {...sharedProps} />}
 
-      {screen==="feedback" && <FeedbackModal
-        fbOpen={fbOpen} scenarios={scenarios} setScreen={setScreen} />}
+          {screen==="feedback" && <FeedbackModal
+            fbOpen={fbOpen} scenarios={scenarios} setScreen={setScreen} />}
 
-      {screen==="leaderboard" && <LeaderboardScreen
-        teamName={teamName} members={members} scenarios={scenarios}
-        fallbackTeams={fallbackTeams}
-        setScreen={setScreen} {...sharedProps} />}
+          {screen==="leaderboard" && <LeaderboardScreen
+            teamName={teamName} members={members} scenarios={scenarios}
+            fallbackTeams={fallbackTeams}
+            setScreen={setScreen} {...sharedProps} />}
 
-      {(screen==="community" || screen==="insight") && <CommunityScreen
-        teamName={teamName} members={members} scenarios={scenarios}
-        commSc={commSc} setCommSc={setCommSc}
-        commAnw={commAnw} myAnw={myAnw}
-        commSorted={commSorted} commScenario={commScenario}
-        sortBy={sortBy} setSortBy={setSortBy}
-        setScreen={setScreen} setInsightOpen={setInsightOpen}
-        {...sharedProps} />}
+          {(screen==="community" || screen==="insight") && <CommunityScreen
+            teamName={teamName} members={members} scenarios={scenarios}
+            commSc={commSc} setCommSc={setCommSc}
+            commAnw={commAnw} myAnw={myAnw}
+            commSorted={commSorted} commScenario={commScenario}
+            sortBy={sortBy} setSortBy={setSortBy}
+            setScreen={setScreen} setInsightOpen={setInsightOpen}
+            {...sharedProps} />}
 
-      {screen==="insight" && <InsightModal
-        insightOpen={insightOpen} community={community}
-        teamName={teamName} setScreen={setScreen} />}
+          {screen==="insight" && <InsightModal
+            insightOpen={insightOpen} community={community}
+            teamName={teamName} setScreen={setScreen} />}
 
-      {submitting && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.35)",
-          display:"flex", alignItems:"center", justifyContent:"center", zIndex:300}}>
-          <div style={{background:C.card, borderRadius:14, padding:"28px 36px",
-            textAlign:"center", boxShadow:"0 8px 32px rgba(0,0,0,0.18)"}}>
-            <div style={{fontSize:13, fontWeight:600, color:C.text, marginBottom:6}}>
-              Saving your results...
+          {submitting && (
+            <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.35)",
+              display:"flex", alignItems:"center", justifyContent:"center", zIndex:300}}>
+              <div style={{background:C.card, borderRadius:14, padding:"28px 36px",
+                textAlign:"center", boxShadow:"0 8px 32px rgba(0,0,0,0.18)"}}>
+                <div style={{fontSize:13, fontWeight:600, color:C.text, marginBottom:6}}>
+                  Saving your results...
+                </div>
+                <div style={{fontSize:12, color:C.muted}}>Just a moment</div>
+              </div>
             </div>
-            <div style={{fontSize:12, color:C.muted}}>Just a moment</div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   );

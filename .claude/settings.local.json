@@ -6,7 +6,9 @@
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"G:\\\\Internship Work\\\\Micro Apps\\\\Group Activity\" -Recurse -Force)",
       "Bash(Select-Object -First 50)",
-      "Bash(Format-List FullName)"
+      "Bash(Format-List FullName)",
+      "Bash(Select-String -Path \"G:\\\\Internship Work\\\\Micro Apps\\\\Group Activity\\\\app\\\\page.jsx\" -Pattern \"MODERATOR_EMAIL|isModerator|ModeratorView|ModeratorLeaderboard|ModeratorCommunity|handleModeratorLogout|onModeratorAccess|handleMod\")",
+      "Bash(Select-Object LineNumber, Line)"
     ]
   }
 }
